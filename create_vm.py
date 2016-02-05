@@ -5,7 +5,7 @@ import crypt
 from optparse import OptionParser
 
 def main():
-    parser = OptionParser(usage="usage: W%prog [options] filename",
+    parser = OptionParser(usage="usage: %prog [options] filename",
                           version="%prog 1.0")
     parser.add_option("-n", "--name",
                       action="store_true",
