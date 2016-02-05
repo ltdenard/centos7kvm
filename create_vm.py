@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import os
 import sys
-import json
 import crypt
 from optparse import OptionParser
 
@@ -40,7 +39,13 @@ def main():
                       help="User besides root to add and will have the same password as root",)
     (options, args) = parser.parse_args()
 
-    if len(args) == 0:
+    if options.name is None:
+        parser.error('Machine name not given')
+        parser.print_help()
+        sys.exit(1)
+
+    if options.user is None:
+        parser.error('Machine user not given')
         parser.print_help()
         sys.exit(1)
 
@@ -82,7 +87,8 @@ lang en_US.UTF-8
 # repository
 repo --name="CentOS Repo" --baseurl=http://www.gtlib.gatech.edu/pub/centos/7/os/x86_64/
 
-# by specifying the update Repo the install process will automatically update to the latest version. If you wish to stay at the initial release version, comment the following line.
+# by specifying the update Repo the install process will automatically update to the latest version. 
+# If you wish to stay at the initial release version, comment the following line.
 repo --name="CentOS Repo Update" --baseurl=http://www.gtlib.gatech.edu/pub/centos/7/updates/x86_64/
 
 # Network information
@@ -149,14 +155,23 @@ aide -i
 # update
 yum -y update
 
+# reboot after install
+reboot
 %%end
     """ % (hostname, passwd_hash, user, passwd_hash, user)
 
     with open('/data/centos7kvm/tmp.ks', 'w') as f:
         f.write(kickstart_file_content)
     kickstartfile = "tmp.ks"
-    virt_command = """virt-install --name %s --ram %s --disk path=/data/images/%s.img,size=%s --vcpus %s --os-type linux --os-variant centos7.0 --network bridge=br0 --graphics none --console pty,target_type=serial --location 'http://www.gtlib.gatech.edu/pub/centos/7/os/x86_64/' --initrd-inject=/data/centos7kvm/%s --extra-args 'ks=file:/%s console=ttyS0,115200n8 serial'""" % (hostname, ram, hostname, size, cpus, kickstartfile, kickstartfile)
-    os.system(virt_command)
+    virt_command = """virt-install --name %s --ram %s --disk """ + \
+        """path=/data/images/%s.img,size=%s --vcpus %s --os-type linux """ + \
+        """--os-variant centos7.0 --network bridge=br0 --graphics none """ + \
+        """--console pty,target_type=serial --location """ + \
+        """'http://www.gtlib.gatech.edu/pub/centos/7/os/x86_64/' """ + \
+        """--initrd-inject=/data/centos7kvm/%s --extra-args """ + \
+        """'ks=file:/%s console=ttyS0,115200n8 serial'"""
+
+    os.system(virt_command % (hostname, ram, hostname, size, cpus, kickstartfile, kickstartfile))
 
 if __name__ == '__main__':
     main()
