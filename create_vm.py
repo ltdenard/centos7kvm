@@ -49,6 +49,10 @@ def main():
         parser.print_help()
         sys.exit(1)
 
+    if len(args) == 0:
+        parser.print_help()
+        sys.exit(1)
+
     options = vars(options)
     hostname = args[0]
     passwd = options['pass']
