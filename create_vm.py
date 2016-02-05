@@ -131,6 +131,9 @@ clearpart --all --initlabel --drives=vda
 # accept licensing
 eula --agreed
 
+# poweroff after install
+poweroff
+
 %%packages
 @core
 kexec-tools
@@ -159,8 +162,6 @@ aide -i
 # update
 yum -y update
 
-# reboot after install
-reboot
 %%end
     """ % (hostname, passwd_hash, user, passwd_hash, user)
 
