@@ -3,7 +3,6 @@ import os
 import sys
 import crypt
 import argparse
-from optparse import OptionParser
 
 def main():
     parser = argparse.ArgumentParser(description='Kickstart a Centos 7 KVM')
