@@ -163,7 +163,7 @@ yum -y update
         """--initrd-inject=/data/centos7kvm/%s --extra-args """ + \
         """'ks=file:/%s console=ttyS0,115200n8 serial'"""
 
-    # os.system(virt_command % (hostname, ram, hostname, size, cpus, kickstartfile, kickstartfile))
+    os.system(virt_command % (hostname, ram, hostname, size, cpus, kickstartfile, kickstartfile))
 
 if __name__ == '__main__':
     main()
