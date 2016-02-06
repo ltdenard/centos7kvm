@@ -2,59 +2,45 @@
 import os
 import sys
 import crypt
+import argparse
 from optparse import OptionParser
 
 def main():
-    parser = OptionParser(usage="usage: %prog [options] filename",
-                          version="%prog 1.0")
-    parser.add_option("-n", "--name",
-                      action="store_true",
-                      dest="name",
-                      default=False,
-                      help="VM Name")
-    parser.add_option("-c", "--cpu",
-                      action="store",
+    parser = argparse.ArgumentParser(description='Kickstart a Centos 7 KVM')
+    parser.add_argument("-n", "--name", 
+                      dest="name", 
+                      help="VM Name",
+                      required=True)
+    parser.add_argument("-c", "--cpu",
                       dest="cpu",
                       default="1",
-                      help="How many vCPUs,",)
-    parser.add_option("-r", "--ram",
-                      action="store",
+                      help="How many vCPUs,")
+    parser.add_argument("-r", "--ram",
                       dest="ram",
                       default="1024",
-                      help="How much ram do you need,",)
-    parser.add_option("-d", "--disk",
-                      action="store",
+                      help="How much ram do you need,")
+    parser.add_argument("-d", "--disk",
                       dest="size",
                       default="10",
-                      help="How much disk space in gigs",)
-    parser.add_option("-p", "--pass",
-                      action="store",
+                      help="How much disk space in gigs")
+    parser.add_argument("-p", "--pass",
                       dest="pass",
                       default="password",
-                      help="Root password",)
-    parser.add_option("-u", "--user",
-                      action="store",
+                      help="Root password")
+    parser.add_argument("-u", "--user",
                       dest="user",
                       default=False,
-                      help="User besides root to add and will have the same password as root",)
-    (options, args) = parser.parse_args()
-
-    if options.name is None:
-        parser.error('Machine name not given')
-        parser.print_help()
-        sys.exit(1)
-
-    if options.user is None:
-        parser.error('Machine user not given')
-        parser.print_help()
-        sys.exit(1)
-
-    if len(args) == 0:
-        parser.print_help()
-        sys.exit(1)
+                      help="User besides root to add and will have the same password as root",
+                      required=True)
+    try:
+        options = parser.parse_args()
+    except:
+        if len(sys.argv) == 1:
+            parser.print_help()
+        return
 
     options = vars(options)
-    hostname = args[0]
+    hostname = options['name']
     passwd = options['pass']
     passwd_hash = crypt.crypt(passwd , crypt.mksalt(crypt.METHOD_SHA512))
     user = options['user']
@@ -168,6 +154,7 @@ yum -y update
     with open('/data/centos7kvm/tmp.ks', 'w') as f:
         f.write(kickstart_file_content)
     kickstartfile = "tmp.ks"
+    
     virt_command = """virt-install --name %s --ram %s --disk """ + \
         """path=/data/images/%s.img,size=%s --vcpus %s --os-type linux """ + \
         """--os-variant centos7.0 --network bridge=br0 --graphics none """ + \
@@ -176,7 +163,7 @@ yum -y update
         """--initrd-inject=/data/centos7kvm/%s --extra-args """ + \
         """'ks=file:/%s console=ttyS0,115200n8 serial'"""
 
-    os.system(virt_command % (hostname, ram, hostname, size, cpus, kickstartfile, kickstartfile))
+    # os.system(virt_command % (hostname, ram, hostname, size, cpus, kickstartfile, kickstartfile))
 
 if __name__ == '__main__':
     main()
