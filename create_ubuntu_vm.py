@@ -48,146 +48,90 @@ def main():
     cpus = options['cpu']
 
     kickstart_file_content = """
-#
-#Kickstart template for Ubuntu
-#Platform: x86-64
-#
-# Customized for Server 18.04 minimal vm install
-#
-# See README.mkd for usage
+### Localization
+d-i debian-installer/locale string en_US
+d-i console-setup/ask_detect boolean false
+d-i keyboard-configuration/layoutcode string us
 
-# Load the minimal server preseed off cdrom
-preseed preseed/file string /cdrom/preseed/ubuntu-server-minimalvm.seed
+### Network configuration
+d-i netcfg/choose_interface select auto
+d-i netcfg/get_hostname string {}
+d-i netcfg/get_domain string pingnattack.com
+d-i netcfg/wireless_wep string
 
-# OPTIONAL: Change hostname from default 'preseed'
-# If your DHCP hands out a hostname that will take precedence over this
-# see: https://bugs.launchpad.net/ubuntu/+source/preseed/+bug/1452202
-preseed netcfg/hostname string {}
+### Mirror settings
+d-i mirror/http/countries select US
+d-i mirror/country string US
+d-i mirror/http/hostname string us.archive.ubuntu.com
+d-i mirror/http/directory string /images/Ubuntu/18.04
+d-i mirror/http/mirror select us.archive.ubuntu.com
+d-i mirror/http/proxy string
 
-# Use local proxy
-# Setup a server with apt-cacher-ng and enter that hostname here
-#preseed mirror/http/proxy string http://my-local-cache:3142/
+### Clock and time zone setup
+d-i clock-setup/utc boolean true
+d-i time/zone string US/Eastern
+d-i clock-setup/ntp boolean true
 
-#System language
-lang en_US
+### Partitioning
+d-i partman-auto/disk string /dev/vda
+d-i partman-auto/method string lvm
+d-i partman-lvm/device_remove_lvm boolean true
+d-i partman-md/device_remove_md boolean true
+d-i partman-lvm/confirm boolean true
+d-i partman-lvm/confirm_nooverwrite boolean true
+d-i partman-auto-lvm/guided_size string max
+d-i partman-auto/choose_recipe select atomic
+d-i partman/default_filesystem string ext4
+d-i partman-partitioning/confirm_write_new_label boolean true
+d-i partman/choose_partition select finish
+d-i partman/confirm boolean true
+d-i partman/confirm_nooverwrite boolean true
 
-#Language modules to install
-langsupport en_US
+### Account setup
+d-i passwd/root-login boolean true
+d-i passwd/root-password-crypted password {}
+d-i passwd/user-fullname string {}
+d-i passwd/username string {}
+d-i passwd/user-password-crypted password {}
+d-i user-setup/encrypt-home boolean false
 
-#System keyboard
-keyboard us
+### Apt setup
 
-#System mouse
-mouse
+### Package selection
+tasksel tasksel/first multiselect
+# Individual additional packages to install
+d-i pkgsel/include string git openssh-server python-simplejson sudo
+d-i pkgsel/update-policy select none
+d-i pkgsel/upgrade select none
+popularity-contest popularity-contest/participate boolean false
 
-#System timezone
-timezone --utc America/New_York
+### Boot loader installation
+d-i grub-installer/only_debian boolean true
+d-i grub-installer/with_other_os boolean true
 
-#Root password
-rootpw --iscrypted {}
+### Finishing up the installation
+d-i finish-install/reboot_in_progress note
+d-i debian-installer/exit/poweroff boolean true
 
-#Initial user (user with sudo capabilities)
-user {} --fullname="{}" --password={} --iscrypted
+### Preseeding other packages
 
-#Reboot after installation
-reboot
+#### Advanced options
+d-i preseed/late_command string \
+echo "{}    ALL=(ALL) NOPASSWD:ALL" >> /target/etc/sudoers; \
+in-target ln -s /lib/systemd/system/serial-getty@.service /etc/systemd/system/getty.target.wants/serial-getty@ttyS0.service; \
+rm -f /target/etc/ssh/ssh_host_*; \
+in-target sed -i -e 's|exit 0||' /etc/rc.local; \
+in-target sed -i -e 's|.*test -f /etc/ssh/ssh_host_dsa_key.*||' /etc/rc.local; \
+in-target bash -c 'echo "test -f /etc/ssh/ssh_host_dsa_key || dpkg-reconfigure openssh-server" >> /etc/rc.local'; \
+in-target bash -c 'echo "exit 0" >> /etc/rc.local'; \
+echo "{}" > /target/etc/hostname; \ rm -rf /etc/resolv.conf ; \
+echo "search pingnattack.com" > /etc/resolv.conf ; \
+echo "nameserver 10.20.254.1" >> /etc/resolv.conf; \
+    """.format(passwd_hash, hostname, user, user, passwd_hash, user, hostname)
 
-#Use text mode install
-text
-
-#Install OS instead of upgrade
-install
-
-#Installation media
-url --url=http://archive.ubuntu.com/ubuntu/
-
-#Change console size to 1024x768x24
-# use set gfxpayload=1024x768x24,1024x768 before linux
-# preseed debian-installer/add-kernel-opts string "vga=792"
-
-#System bootloader configuration
-bootloader --location=mbr
-
-#Clear the Master Boot Record
-zerombr yes
-
-#Partition clearing information
-clearpart --initlabel --drives vda
-preseed partman-auto/disk string /dev/vda
-preseed partman-auto-lvm/guided_size string 8192MB
-part /boot --fstype=ext4 --size=1024 --asprimary
-part pv.1 --grow --size=1 --asprimary
-volgroup vg0 pv.1
-logvol / --fstype=ext4 --name=root --vgname=vg0 --size=1 --grow
-logvol swap --name=swap --vgname=vg0 --size=2048 --maxsize=2048
-
-
-
-# Don't install recommended items by default
-# This will also be set for built system at
-# /etc/apt/apt.conf.d/00InstallRecommends
-preseed base-installer/install-recommends boolean false
-
-#System authorization infomation
-auth --enableshadow
-
-#Network information
-network --bootproto=dhcp --device=auto
-
-#Firewall configuration
-# Not supported by ubuntu
-# firewall --enabled --ssh
-
-# Policy for applying updates. May be "none" (no automatic updates),
-# "unattended-upgrades" (install security updates automatically), or
-# "landscape" (manage system with Landscape).
-# preseed pkgsel/update-policy select unattended-upgrades
-
-#Do not configure the X Window System
-skipx
-
-%packages
-# -- required for %post --
-vim
-software-properties-common
-gpg-agent  # apt-key needs this when piping certs in through stdin
-curl
-openssh-server
-net-tools  # this includes commands like ifconfig and netstat
-wget
-man
-
-
-%post
-# Set some defaults for apt to keep things tidy
-cat > /etc/apt/apt.conf.d/90local <<"_EOF_"
-APT::Periodic::Update-Package-Lists "1";
-APT::Periodic::Unattended-Upgrade "1";
-APT::Periodic::AutocleanInterval "1";
-APT::Periodic::MaxSize "200";
-Unattended-Upgrade::Remove-Unused-Dependencies "true";
-#Acquire::http::Proxy "http://my-local-cache:3142";
-_EOF_
-
-# -- begin vim package customizations --
-echo "set background=dark" >>/etc/vim/vimrc.local
-# -- end vim package customizations --
-
-# -- begin install git from 'Ubuntu Git Maintainers' PPA --
-apt-get -qq -y update
-apt-get -qq -y install git
-# -- end install git from 'Ubuntu Git Maintainers' PPA --
-
-# Clean up
-apt-get -qq -y autoremove
-apt-get clean
-rm -f /var/cache/apt/*cache.bin
-rm -rf /var/lib/apt/lists/*
-    """.format(hostname, passwd_hash, user, passwd_hash, user)
-
-    with open('/data/centos7kvm/tmp.ks', 'w') as f:
+    with open('/data/centos7kvm/tmp.preseed', 'w') as f:
         f.write(kickstart_file_content)
-    kickstartfile = "tmp.ks"
+    kickstartfile = "tmp.preseed"
     
     virt_command = """virt-install --name {} --ram {} --disk """ + \
         """path=/data/images/{}.img,size={} --vcpus {} --os-type linux """ + \
@@ -195,10 +139,9 @@ rm -rf /var/lib/apt/lists/*
         """--console pty,target_type=serial --location """ + \
         """'http://archive.ubuntu.com/ubuntu/dists/bionic/main/installer-amd64/' """ + \
         """--initrd-inject=/data/centos7kvm/{} --extra-args """ + \
-        """'ks=file:/{} console=ttyS0,115200n8 serial'"""
+        """'file=file:/{} console=tty0 console=ttyS0,115200n8 serial locale=en_US auto=true priority=critical netcfg/use_autoconfig=true netcfg/disable_dhcp=false netcfg/get_hostname={} netcfg/get_domain=pingnattack.com network-console/password=instpass network-console/start=true'"""
 
-    os.system(virt_command.format(hostname, ram, hostname, size, cpus, kickstartfile, kickstartfile))
+    os.system(virt_command.format(hostname, ram, hostname, size, cpus, kickstartfile, kickstartfile, hostname))
 
 if __name__ == '__main__':
     main()
-
