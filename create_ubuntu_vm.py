@@ -138,9 +138,11 @@ echo "nameserver 10.20.254.1" >> /etc/resolv.conf; \
         """--console pty,target_type=serial --location """ + \
         """'http://archive.ubuntu.com/ubuntu/dists/bionic/main/installer-amd64/' """ + \
         """--initrd-inject=/data/centos7kvm/{} --extra-args """ + \
-        """'file=file:/{} console=tty0 console=ttyS0,115200n8 serial locale=en_US auto=true priority=critical netcfg/use_autoconfig=true netcfg/disable_dhcp=false netcfg/get_hostname={} netcfg/get_domain=pingnattack.com network-console/password=instpass network-console/start=true'"""
+        """'ks=file:/{} url=file:///{} console=tty0 console=ttyS0,115200n8 serial locale=en_US auto=true priority=critical netcfg/use_autoconfig=true netcfg/disable_dhcp=false netcfg/get_hostname={} netcfg/get_domain=pingnattack.com network-console/password=instpass network-console/start=true'"""
 
-    os.system(virt_command.format(hostname, ram, hostname, size, cpus, kickstartfile, kickstartfile, hostname))
+    os.system(virt_command.format(hostname, ram, hostname, size, cpus, kickstartfile, kickstartfile, kickstartfile, hostname))
 
 if __name__ == '__main__':
     main()
+
+
