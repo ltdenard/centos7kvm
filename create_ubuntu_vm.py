@@ -88,8 +88,7 @@ d-i partman/confirm boolean true
 d-i partman/confirm_nooverwrite boolean true
 
 ### Account setup
-d-i passwd/root-login boolean true
-d-i passwd/root-password-crypted password {}
+d-i passwd/root-login boolean false
 d-i passwd/user-fullname string {}
 d-i passwd/username string {}
 d-i passwd/user-password-crypted password {}
@@ -127,7 +126,7 @@ in-target bash -c 'echo "exit 0" >> /etc/rc.local'; \
 echo "{}" > /target/etc/hostname; \ rm -rf /etc/resolv.conf ; \
 echo "search pingnattack.com" > /etc/resolv.conf ; \
 echo "nameserver 10.20.254.1" >> /etc/resolv.conf; \
-    """.format(passwd_hash, hostname, user, user, passwd_hash, user, hostname)
+    """.format(hostname, user, user, passwd_hash, user, hostname)
 
     with open('/data/centos7kvm/tmp.preseed', 'w') as f:
         f.write(kickstart_file_content)
